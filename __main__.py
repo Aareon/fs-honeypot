@@ -66,7 +66,7 @@ def check_elevated():
         sys.exit(1)
 
 
-def parse_logged_in_users(output):
+def parse_logged_in_users_windows(output):
     """
     Parse the output from the `query user` command or similar and return a list of dictionaries.
 
@@ -110,17 +110,55 @@ def parse_logged_in_users(output):
     return users
 
 
+def parse_logged_in_users_linux(output):
+    users = []
+    lines = output.strip().split('\n')
+    
+    if len(lines) < 3:
+        return users  # No logged-in users found
+
+    header = lines[1]
+    columns = header.split()
+    
+    indices = {
+        'USER': header.index('USER'),
+        'TTY': header.index('TTY'),
+        'FROM': header.index('FROM'),
+        'LOGIN@': header.index('LOGIN@'),
+        'IDLE': header.index('IDLE'),
+        'JCPU': header.index('JCPU'),
+        'PCPU': header.index('PCPU'),
+        'WHAT': header.index('WHAT')
+    }
+    
+    for line in lines[2:]:
+        user = {}
+        user['USER'] = line[indices['USER']:header.index('TTY')].strip()
+        user['TTY'] = line[indices['TTY']:header.index('FROM')].strip()
+        user['FROM'] = line[indices['FROM']:header.index('LOGIN@')].strip()
+        user['LOGIN@'] = line[indices['LOGIN@']:header.index('IDLE')].strip()
+        user['IDLE'] = line[indices['IDLE']:header.index('JCPU')].strip()
+        user['JCPU'] = line[indices['JCPU']:header.index('PCPU')].strip()
+        user['PCPU'] = line[indices['PCPU']:header.index('WHAT')].strip()
+        user['WHAT'] = line[indices['WHAT']:].strip()
+        if user not in users:
+            users.append(user)
+    
+    return users
+
+
 def get_logged_in_users():
     try:
         if platform.platform().startswith("Windows"):
             process = subprocess.Popen(["qwinsta"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             _ = process.wait()
             result = process.stdout.read().decode("utf-8")
-            users = ' '.join(u['USERNAME'] for u in parse_logged_in_users(result)).strip()
+            users = ' '.join(f"{u['USERNAME']}/{u['ID']}" for u in parse_logged_in_users_windows(result)).strip()
             return users
         else:  # Linux
             result = subprocess.run(['w'], capture_output=True, text=True, check=True)
-            return result.stdout
+            users = ' '.join(f"{u['USER']}/{u['TTY']}" for u in parse_logged_in_users_linux(result.stdout)).strip()
+            return users
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to get logged in users: {e}")
         return ""
