@@ -1,0 +1,24 @@
+# config.toml
+honeypot_files = [
+    "~/bitcoin_private_key.txt",
+    "~/wallet.dat",
+    "~/discord_token.txt",
+    #"~/.ssh/id_rsa",
+    #"~/.ssh/id_rsa.pub",
+    #"~/.ssh/known_hosts",
+    "~/.my.cnf",
+    "~/.pgpass",
+    "~/mysql/my.cnf",
+    "~/wp-config.php",
+    "~/.aws/credentials",
+    "~/.aws/config",
+    "~/.kube/config",
+    "~/passwords.txt"
+]
+
+monitor_directory = "~/"
+# network_interface = "enp7s0" # Linux
+network_interface = "Ethernet" # Windows
+notification_debounce_seconds = 3
+reenable_network_delay = 30
+trigger_actions = ["send_notification"]  # "disable_network", "shutdown", "reboot", "log_off_session", "lock_screen", "send_notification"
